@@ -8,6 +8,11 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
+// Add a root route
+app.get('/', (req, res) => {
+    res.send('Backend is running!');
+});
+
 let isVPSSetup = false;
 const PACKET_SIZE = 1024; // Predefined packet size
 const THREADS = 750; // Predefined threads
