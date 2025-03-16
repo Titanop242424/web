@@ -8,7 +8,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// Add a root route
+// Root route
 app.get('/', (req, res) => {
     res.send('Backend is running!');
 });
