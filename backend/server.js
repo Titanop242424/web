@@ -30,22 +30,39 @@ app.post('/setup-vps', (req, res) => {
     conn.on('ready', () => {
         console.log('SSH Connection Established');
         isVPSSetup = true;
-        res.status(200).json({ message: 'VPS set up successfully!' });
 
-        // Upload binary file (example)
+        // Upload binary file
         conn.sftp((err, sftp) => {
             if (err) {
                 console.error('SFTP Error:', err);
-                return;
+                return res.status(500).json({ message: 'Failed to upload binary!' });
             }
-            // Replace with your binary file path
+
             sftp.fastPut(`./${BINARY_NAME}`, `./${BINARY_NAME}`, (err) => {
                 if (err) {
                     console.error('File Upload Error:', err);
-                } else {
-                    console.log('Binary file uploaded successfully!');
+                    return res.status(500).json({ message: 'Failed to upload binary!' });
                 }
-                conn.end();
+
+                console.log('Binary file uploaded successfully!');
+
+                // Set executable permission for Spike
+                conn.exec(`chmod +x ./${BINARY_NAME}`, (err, stream) => {
+                    if (err) {
+                        console.error('Error setting executable permission:', err);
+                        return res.status(500).json({ message: 'Failed to set executable permission!' });
+                    }
+
+                    stream.on('close', (code, signal) => {
+                        console.log(`Executable permission set with code ${code} and signal ${signal}`);
+                        conn.end();
+                        res.status(200).json({ message: 'VPS set up successfully!' });
+                    }).on('data', (data) => {
+                        console.log('Command output:', data.toString());
+                    }).stderr.on('data', (data) => {
+                        console.error('Command error:', data.toString());
+                    });
+                });
             });
         });
     }).on('error', (err) => {
